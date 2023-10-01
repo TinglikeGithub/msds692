@@ -5,15 +5,24 @@ Each bucket is a list of (key,value) tuples
 
 def htable(nbuckets):
     """Return a list of nbuckets lists"""
+    return [[] for i in range(nbuckets)]
 
 
-def hashcode(o):
+def hashcode(o): # hashfuction to get the index for key
     """
     Return a hashcode for strings and integers; all others return None
     For integers, just return the integer value.
     For strings, perform operation h = h*31 + ord(c) for all characters in the string
     """
-
+    h = 0
+    if isinstance(o, int):
+        h = o
+    elif isinstance(o, str):
+        for c in o:
+            h = h*31 + ord(c)
+    return h
+# output = h = 90748680016
+# # table =[90748680016, 2883905625, 2927376771, 93029210, 2623502345479838702]
 
 def bucket_indexof(table, key):
     """
@@ -22,6 +31,7 @@ def bucket_indexof(table, key):
     table[hashcode(key) % len(table)]. You have to linearly
     search the bucket to find the tuple containing key.
     """
+    return hashcode(key) % len(table)
 
 
 def htable_put(table, key, value):
@@ -34,7 +44,19 @@ def htable_put(table, key, value):
     Make sure that you are only adding (key,value) associations to the buckets.
     The type(value) can be anything. Could be a set, list, number, string, anything!
     """
-
+    # table = [[], [], [], [], []]
+    # key = 'carrots', value = [2, 99, 3942]
+    bucket = table[bucket_indexof(table, key)]
+    
+    # Check if key already exists in the bucket
+    for i, (k, v) in enumerate(bucket):
+        if k == key:
+            bucket[i] = (key, value)
+            return table  # return early if key was found and value updated
+    
+    bucket.append((key, value))
+    return table
+ # output:[[], [('carrots', [2, 99, 3942])], [], [], []]
 
 def htable_get(table, key):
     """
@@ -43,6 +65,17 @@ def htable_get(table, key):
     association with the key. Return the value (not the key and not
     the association!). Return None if key not found.
     """
+    # input: table =[[], [('carrots', [2, 99, 3942])], [], [], []]
+
+    position = bucket_indexof(table, key)
+    buckect = table[position]
+    # buckect =[('carrots', [2, 99, 3942])]
+    print("bucket:", buckect)
+    output = None
+    for (k,v) in buckect:
+        if key == k:
+            output = v
+    return output
 
 
 def htable_buckets_str(table):
@@ -56,6 +89,12 @@ def htable_buckets_str(table):
         0004->
     where parrt:99 indicates an association of (parrt,99) in bucket 3.
     """
+    output = ''
+    for idx, pairs in enumerate(table):
+        pairs_str = ', '.join(f"{k}:{v}" for k, v in pairs)
+        output += f"{idx:04}->" + pairs_str + '\n'
+    return output
+    
 
 
 def htable_str(table):
@@ -65,3 +104,12 @@ def htable_str(table):
     insertion order within each bucket. The insertion order is
     guaranteed when you append to the buckets in htable_put().
     """
+    # input: table=[[(5, 5), (10, 10)], [(1, 1), (6, 6)], [(2, 2), (7, 7)], [(3, 3), (8, 8)], [(4, 4), (9, 9)]]
+    # output: "{5:5, 10:10, 1:1, 6:6, 2:2, 7:7, 3:3, 8:8, 4:4, 9:9}"
+    d = dict()
+    for bucket in table:
+        for (k,v) in bucket:
+            d[k]=v
+    output = "{" + ", ".join(f"{k}:{v}" for k, v in d.items()) + "}"
+    return output
+

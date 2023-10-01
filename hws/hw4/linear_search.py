@@ -1,8 +1,8 @@
 # Got slate magazine data from http://www.anc.org/data/oanc/contents/
 # rm'd .xml, .anc files, leaving just .txt
 # 4534 files in like 55 subdirs
-
-from words import get_text, words
+import os
+from words import get_text, words,filelist
 
 
 def linear_search(files, terms):
@@ -12,3 +12,21 @@ def linear_search(files, terms):
     Parameter terms is a list of strings.
     Perform a linear search, looking at each file one after the other.
     """
+    output = []
+    for file in files:
+        file_word = words(get_text(file))
+        count = 0
+        for term in terms:
+            if term in file_word:
+                count += 1
+        if count == len(terms):
+            output.append(file)
+
+    return output
+
+rootdir = os.path.expanduser("~/data/berlitz1")
+files = filelist(rootdir)
+terms="greek travel"
+terms = words(terms)
+linear_docs = linear_search(files, terms)
+print(linear_docs)

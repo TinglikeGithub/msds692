@@ -1,5 +1,5 @@
 from collections import defaultdict  # https://docs.python.org/2/library/collections.html
-
+import os
 from words import get_text, words
 
 
@@ -12,6 +12,18 @@ def create_index(files):
     For each word w in file i, add i to the set of document IDs containing w
     Return a dict object mapping a word to a set of doc IDs.
     """
+    index = {}
+    for file in files:
+        file_word = words(get_text(file))
+        for word in file_word:
+            value=set()
+            if word in index.keys():
+                index[word].add(files.index(file))
+            else:
+                value.add(files.index(file))
+                index[word] = value
+    return index
+# output: {'word': {0,1}, 'a': {0}}
 
 
 def index_search(files, index, terms):
@@ -22,3 +34,15 @@ def index_search(files, index, terms):
     You can only use the index to find matching files; you cannot open the files
     and look inside.
     """
+    # terms = ['word', 'a'], index={'word': {0,1}, 'a': {0}}
+    # we wanna intersection of {0,1} and {0}
+    
+    if terms[0] in index.keys():
+        inter = index[terms[0]]
+        print(inter)
+        for term in terms[1:]:
+            inter &= index.get(term, set())
+        return [files[i] for i in inter]
+    else:
+        return []
+    

@@ -50,7 +50,16 @@ def doc_freq(tok_corpus):
     Output:
        df: dictionary df[w] = # of docs containing w 
     """
-    # your code here
+    df = {}
+    for doc in tok_corpus:
+        unique_words = set(doc)
+        
+        for word in unique_words:
+            if word not in df:
+                df[word] = 1
+            else:
+                df[word] += 1          
+    return df
 
 def compute_tfidf_i(tok_doc: list, doc_freq: dict, N: int) -> dict:
     """ Returns a dictionary of tfidf for one document
