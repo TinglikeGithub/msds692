@@ -103,6 +103,10 @@ def words(text):
     text = text.lower()
     text = re.sub("[" + string.punctuation + '0-9\\r\\t\\n]', ' ', text)
     ## YOUR CODE HERE 
+    text = text.split(" ")
+    text = [word for word in text if len(word)>2]
+    words = [word for word in text if word.lower() not in ENGLISH_STOP_WORDS]
+    return words
 
 def split_title(text):
     """

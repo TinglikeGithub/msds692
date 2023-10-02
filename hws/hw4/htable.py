@@ -70,7 +70,6 @@ def htable_get(table, key):
     position = bucket_indexof(table, key)
     buckect = table[position]
     # buckect =[('carrots', [2, 99, 3942])]
-    print("bucket:", buckect)
     output = None
     for (k,v) in buckect:
         if key == k:

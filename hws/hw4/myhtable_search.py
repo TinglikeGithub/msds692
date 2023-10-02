@@ -13,32 +13,22 @@ def myhtable_create_index(files):
     your htable.  As a number of htable buckets, use 4011.
     Returns a list-of-buckets hashtable representation.
     """
-    # output:[[], [('carrots', [2, 99, 3942])], [], [], []]
-    table = htable(len(files))
-    index = {}
-    #index = set()
-    for file in files:
-        file_word = words(get_text(file))
-        unique_word = set(file_word)
-        # get word:num dict
-        for word in unique_word:
-            if word in index.keys():
-                index[word].add(files.index(file))
-            else:
-                value = set()
-                value.add(files.index(file))
-                index[word] = value
+    table = htable(4011)
 
-    for file in files:
-        file_word = words(get_text(file))
-        unique_word = set(file_word)
-        for word in unique_word:
-            key = word
-            value = index[key]
-            # print(value)
-            hash_table = htable_put(table, key, value)
-    return hash_table
-
+    for doc_id, file in enumerate(files):
+        word = words(get_text(file))
+        for w in word:
+            table_index = hashcode(w) % len(table)
+            bucket = table[table_index]
+            found = False
+            for item in bucket:
+                if item[0] == w:
+                    item[1].add(doc_id)
+                    found = True
+                    break
+            if not found:
+                table[table_index].append([w, {doc_id}])
+    return table
 
 def myhtable_index_search(files, index, terms):
     """
