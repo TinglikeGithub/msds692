@@ -2,7 +2,7 @@
 # rm'd .xml, .anc files, leaving just .txt
 # 4534 files in like 55 subdirs
 import os
-from words import get_text, words,filelist
+from words import get_text, words
 
 
 def linear_search(files, terms):
@@ -23,10 +23,3 @@ def linear_search(files, terms):
             output.append(file)
 
     return output
-
-rootdir = os.path.expanduser("~/data/berlitz1")
-files = filelist(rootdir)
-terms="greek travel"
-terms = words(terms)
-linear_docs = linear_search(files, terms)
-print(linear_docs)

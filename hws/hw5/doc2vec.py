@@ -5,6 +5,7 @@ import os
 import numpy as np
 import codecs
 import pickle
+import spacy
 
 # From scikit learn that got words from:
 # http://ir.dcs.gla.ac.uk/resources/linguistic_utils/stop_words
@@ -66,7 +67,19 @@ def load_glove(filename):
 
     ignore stopwords
     """
+    # filename = "test_glove.txt"
     ## YOUR CODE HERE
+    glove_dict = {}
+    with open(filename, 'r', encoding='utf-8') as file:
+        for line in file:
+            line = line.strip().split(' ')
+            title = line[0]
+            if title in ENGLISH_STOP_WORDS:
+                continue
+            vector = np.array(line[1:], dtype='float32')
+            glove_dict[title]=vector
+    return glove_dict
+# output: {',': np.array([1.5,0,0]), 'sunny':np.array([1.5,0,0])}
 
 def filelist(root):
     """Return a fully-qualified list of filenames under root directory"""
@@ -108,6 +121,7 @@ def words(text):
     words = [word for word in text if word.lower() not in ENGLISH_STOP_WORDS]
     return words
 
+
 def split_title(text):
     """
     Given text returns title and the rest of the article.
@@ -115,6 +129,11 @@ def split_title(text):
     Split the test by "\n" and assume that the first element is the title
     """
     ## YOUR CODE HERE
+    lines = text.strip().split("\n")
+    title = lines[0]
+    body = lines[1:]
+    body =' '.join(body)
+    return title, body
 
 
 def load_articles(articles_dirname, gloves):
@@ -132,6 +151,18 @@ def load_articles(articles_dirname, gloves):
     When computing the vector for each document, use just the text, not the text and title.
     """
     ## YOUR CODE HERE
+    # articles_dirname = ~/data/bbc
+    # gloves = {',': np.array([1.5,0,0]), 'sunny':np.array([1.5,0,0])}
+    files_name = filelist(articles_dirname)
+    table = []
+    for filename in files_name:
+        file_text = get_text(filename)
+        title, body = split_title(file_text)
+        centroid = doc2vec(body, gloves)
+        record = [filename, title, body, centroid]
+        table.append(record)
+    return table
+
 
 
 def doc2vec(text, gloves):
@@ -140,7 +171,20 @@ def doc2vec(text, gloves):
     for each word and then divide by the number of words. Ignore words
     not in gloves.
     """
-    ## YOUR CODE HERE
+    word_list = words(text)
+    word_sum = 0
+    word_in_gloves = 0
+    for word in word_list:
+        if word in gloves.keys():
+            word_in_gloves += 1
+            word_sum += gloves[word]
+
+    if word_in_gloves != 0:
+        vector_centroid = word_sum / word_in_gloves
+    else:
+        vector_centroid =0
+    return vector_centroid
+  # output: 300-dimension array
 
 
 def distances(article, articles):
@@ -149,13 +193,26 @@ def distances(article, articles):
 
     Inputs:
         article = [filename, title, text-minus-title, wordvec-centroid]
-        articles is a list of [filename, title, text-minus-title, wordvec-centroid]
+        article = ["tech/1.txt", "title", "", np.array([0,0,0])]
+        articles is a list of [filename, title, text-minus-title, wordvec-centroid] [filename, title, body, centroid]
+        articles = [["tech/384.txt", "tech", "", np.array([1.5,0,0])],
+                    ["tech/4.txt", "more tech", "", np.array([0,0,2])],
+                    ["tech/3.txt", "mas tech", "", np.array([0,0,1])],
 
     Output:
-        list of (distance, a) for a in articles
-        where a is a list [filename, title, text-minus-title, wordvec-centroid]
+        list of (distance, a) for a in articles 
+        where a is list of [filename, title, text-minus-title, wordvec-centroid]
+    [(distance, [filename2, title, text-minus-title, wordvec-centroid]),(distance, [filename3, title, text-minus-title, wordvec-centroid])]
     """
     ## YOUR CODE HERE
+    # related articles should have centroids that are close in the 300-dimensional space
+    distances = []
+    for item in articles:
+        distance = np.linalg.norm(article[3] - item[3])
+        t =(distance,item)
+        distances.append(t)
+    return distances
+# output: [(distance, [filename2, title, text, centroid]),(distance, [filename3, title, text-minus-title, wordvec-centroid])]
 
 
 def recommended(article, articles, n):
@@ -169,26 +226,58 @@ def recommended(article, articles, n):
          list of [topic, filename, title]
     """
     ## YOUR CODE HERE
+    distance_ls = distances(article, articles)
+    sorted_ls = sorted(distance_ls, key=lambda x: x[0])
+    output = []
+    for i in range(n):
+        filepath = sorted_ls[i+1][1][0]
+        filename = filepath.split('/')[-1]
+        title = sorted_ls[i+1][1][1]
+        topic = filepath.split('/')[-2]
+        mid = [topic, filename, title]
+        output.append(mid)
+    return output
+# output =[['tech', '3.txt', title],[topic, '384.txt', title],[topic, '384.txt', title]]
 
 
 def main():
-    glove_filename = sys.argv[1]
-    articles_dirname = sys.argv[2]
+    glove_filename = sys.argv[1] #~/data/glove.6B.300d.tx
+    articles_dirname = sys.argv[2] #~/data/bbc
 
-    gloves = load_glove(glove_filename)
-    articles = load_articles(articles_dirname, gloves)
+    gloves = load_glove(glove_filename)  #  {',': ['-0.25539', '-0.25723', '0.13169'], 'sunny':['-0.25539', '-0.25723', '0.13169']}
+    articles = load_articles(articles_dirname, gloves) # [[fully-qualified_filename, title, body, centroid],[filename, title, body, centroid]]
+    #python doc2vec.py ~/data/glove.6B.300d.txt ~/data/bbc
+    # articles_dirname = ~/data/bbc
    
     # save a articles.pkl a list with the following information about articles
     # [[topic, filename, title, text], ...]
     ## YOUR CODE HERE
+    info = []
+    for item in articles[2:]:
+        filepath = item[0]
+        filename = filepath.split('/')[-1]
+        topic = filepath.split('/')[-2]
+        title = item[1]
+        text = item[2]
+        mid = [topic, filename, title, text]
+        info.append(mid)
 
+    with open("articles.pkl", "wb") as file:
+        pickle.dump(info, file)
 
     # save in recommended.pkl a dictionary with top 5 recommendations for each article. 
     # given an article use (topic, filename) as the key
     # the recomendations are a list of [topic, filename, title] for the top 5 closest articles
-    # you may want to also add the title and test of the current article
+    # you may want to also add the title and text of the current article
     ## YOUR CODE HERE
-
+    rec_dict = dict()
+    for article in articles[2:]: #article=[filename, title, text-minus-title, wordvec-centroid]
+        recommend = recommended(article, articles, 5) # output =[['tech', '3.txt', title],[topic, filename, title],[topic, '384.txt', title]]
+        key = (article[0].split('/')[-2], article[0].split('/')[-1])
+        rec_dict[key] = recommend
+    
+    with open("recommended.pkl", "wb") as file:
+        pickle.dump(rec_dict, file)
 
 if __name__ == '__main__':    
     main()

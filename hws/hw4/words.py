@@ -1,13 +1,15 @@
 import os
 import re
 import string
-from jinja2 import Template
 
 
 def filelist(root): 
     """Return a fully-qualified list of filenames under root directory"""
-    # rootdir = '/Users/tingpan/data/berlitz1'
-    return [os.path.join(root, filename) for filename in os.listdir(root)]
+    allfiles = []
+    for path, _, files in os.walk(root):
+        for name in files:
+            allfiles.append(os.path.join(path, name))
+    return allfiles
 
 # output :['/Users/tingpan/data/berlitz1/HandRLasVegas.txt','/Users/tingpan/data/berlitz1/IntroMalaysia.txt']
 
@@ -45,30 +47,39 @@ def results(docs, terms):
     that have at least one of the search terms.
     Return at most 100 results.  Arg terms is a list of string terms.
     """
-    # docs = index_search(files, index, terms) or docs = linear_search(files, terms)
-    # ['/Users/tingpan/data/berlitz1/WhereToGreek.txt', '/Users/tingpan/data/berlitz1/WhereToIndia.txt', 
-    #  '/Users/tingpan/data/berlitz1/WhereToItaly.txt', '/Users/tingpan/data/berlitz1/HistoryGreek.txt'] 
-    # we need: term, file path, len of files, contains
-    # length = len(docs)
-    # # create html
-    # template_str = '''
-    # <html>
-    #     <body>
-    #         <h2>Search results for <b>{{terms}}</b> in {{lenght}} files</h2>
-    #         <p> <a href={{herf}}>{{file_text}}</a><br>
-    #         {{lines}}<br><br>
-    #     </body>
-    # </html>
-    # '''
-    # template = Template(template_str)
+    count = 0
+    html_str = [f"<html>\n<body>\n<h2>Search results for <b>{', '.join(terms)}</b> in {len(docs)} files</h2>\n"]
+    matching_docs = []
+    for doc in docs:
+        if count >= 100:
+            break
+            
+        matching_lines = []
 
-    # rendered_html = template.render(
-    #         terms = terms
-    #         length = len(docs)
-    #         herf = 
-    #         file_text = 
-    # )
+        with open(doc, "r", encoding='latin-1', errors="ignore") as file:
+            for line in file:
+                for term in terms:
+                    if re.search(re.escape(term), line, re.IGNORECASE):
+                        matching_lines.append(line.strip())
+                        break
+                if len(matching_lines) >= 2:
+                    break
 
+        if matching_lines:
+            count += 1
+            html_str.append(f"<p> <h4>File:<a href={doc}>{doc}</a></h4><br>\n")
+            matching_docs.append(os.path.basename(doc))
+            for line in matching_lines:
+                for term in terms:
+                    for word in line.split(" "):
+                        if words(word) !=[] and words(word)[0] == term:
+                            line = line.replace(word,f"<b>{word}</b>")
+            
+                html_str.append(f"{line}")
+                
+            html_str.append("</p><br><br>\n")
+    html_str.append("</body>\n</html>")
+    return " ".join(html_str)
 
 
 
